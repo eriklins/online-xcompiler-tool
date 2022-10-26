@@ -21,4 +21,5 @@ Pre-built binaries for Windows 32/64 bit and Linux 32/64 bit are available on th
 
 ## License
 Copyright (C) 2022 Erik Lins
+
 This project is released under the MIT License.
