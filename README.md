@@ -17,7 +17,7 @@ On startup it loads the web page from above URL and grabs devices and firmware v
 The Online XCompiler Tool was written with [Lazarus](https://www.lazarus-ide.org/index.php) / [Free Pascal](https://www.freepascal.org/). The full project and source code are available in the src folder.
 
 ## Releases
-Pre-built binaries for Windows 32/64 bit and Linux 32/64 bit are available on the releases tab. These do not require any particular installation, just download and run.
+Pre-built binaries for Windows 32/64 bit and Linux 32/64 bit are available on the [releases tab](https://github.com/eriklins/online-xcompiler-tool/releases). These do not require any particular installation, just download and run.
 
 ## License
 Copyright (C) 2022 Erik Lins
