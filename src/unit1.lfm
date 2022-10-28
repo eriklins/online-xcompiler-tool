@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 2108
+  Left = 100
   Height = 459
-  Top = 682
+  Top = 100
   Width = 568
   BorderStyle = bsSingle
   Caption = 'Online XCompiler Tool'
