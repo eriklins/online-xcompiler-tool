@@ -36,9 +36,7 @@ uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls, XComp;
 
 type
-
   { TForm1 }
-
   TForm1 = class(TForm)
     UseProxy: TCheckBox;
     ProxyServer: TEdit;
@@ -68,6 +66,7 @@ type
 
   end;
 
+
 var
   Form1: TForm1;
 
@@ -76,14 +75,14 @@ implementation
 
 {$R *.lfm}
 
-
 procedure TForm1.XCompileButtonClick(Sender: TObject);
 
 var
   xCompResult: string;
   p: string;
+
 begin
-  LogOutputMemo.Clear;
+  LogOutputMemo.Lines.Clear;
   LogOutputMemo.Append('XCompiling');
   LogOutputMemo.Append('  file:     ' +
     ExtractFileName(SourceFileOpenDialog.Filename));
@@ -112,6 +111,22 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 
+const
+    xCompPrivacyNotice = 'Laird Connectivity Online XCompilation Service Privacy Note' + #13#10 +
+                       'Last Updated: 25/05/2018' + #13#10#13#10 +
+                       'By using this online service, you are granting Laird' + #13#10 +
+                       'Connectivity permission to collect information transmitted' + #13#10 +
+                       'by your web browser/client which includes: IP address, browser' + #13#10 +
+                       'version, OS version, website query, date/time, and store this' + #13#10 +
+                       'information in log files on a server for security purposes only.' + #13#10#13#10 +
+                       'This information will not be used for any other purpose' + #13#10 +
+                       'including analytical purposes, and will be retained as long' + #13#10 +
+                       'as is necessary to enhance the security of the server and' + #13#10 +
+                       'service Laird Connectivity provides. Due to the nature of the' + #13#10 +
+                       'information being collected for security purposes, you are' + #13#10 +
+                       'unable to request the deletion of data from the server nor' + #13#10 +
+                       'request a download for the data.';
+
 var
   i: integer;
 
@@ -123,6 +138,7 @@ begin
     SelectDeviceBox.Items.Add(XComp.xDevice[i]);
   end;
   SelectDeviceBox.ItemIndex := 0;
+
   // populate firmware selection box and set to first version
   SelectFirmwareBox.Clear;
   for i := 0 to XComp.xNofFirmware[0] - 1 do
@@ -131,12 +147,16 @@ begin
       XComp.xFirmware[i][0][1] + ' ' + XComp.xFirmware[i][0][2] + ')');
   end;
   SelectFirmwareBox.ItemIndex := 0;
+
   // disable XCompiler button
   XCompileButton.Enabled := False;
+
+  LogOutputMemo.Append(xCompPrivacyNotice);
 end;
 
 
 procedure TForm1.UseProxyChange(Sender: TObject);
+
 begin
   // toggle state of proxy server field
   if ProxyServer.Enabled = False then
@@ -184,7 +204,6 @@ end;
 procedure TForm1.SelectFirmwareBoxChange(Sender: TObject);
 
 begin
-
 end;
 
 
