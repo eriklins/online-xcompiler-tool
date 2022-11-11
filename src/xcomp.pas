@@ -5,7 +5,7 @@ unit XComp;
 interface
 
 uses
-  Classes, SysUtils, StrUtils, Dialogs, fphttpclient, HtmlToText;
+  Classes, SysUtils, StrUtils, Dialogs, fphttpclient, LazFileUtils, HtmlToText;
 
 var
   xCompPage, s: string;
@@ -14,22 +14,55 @@ var
   xDevice: array [0..19] of string;  // extend if more than 20 devices
   xNofFirmware: array [0..19] of integer;
   xFirmware: array [0..19, 0..10, 0..2] of string;  // extend if more than 20 fw versions
+  xModuleIdx, xFirmwareIdx: Integer;
+  xField, xProxy, xFileName: String;
 
-  RecDepth: integer = 0;
-
-function DoCompile(xFile: string; xModule: integer; xFirmware: integer;
-  xCompField: string; xProxy: string): string;
+function DoCompile(): string;
+function OpenFileAndInclude(): Boolean;
+function CheckAutoCompile(var f: String): Boolean;
 
 
 implementation
 
+type
+  TIncludedFiles = record
+    PathName: String;
+    IncFileName: String;
+    FileAge: Longint;
+  end;
+
+var
+  FileList: array [0..20] of TIncludedFiles;
+  FileListIndex: Integer;
+  CompFileContent: String;
+
+
+function CheckAutoCompile(var f: String): Boolean;
+var
+  l: Longint;
+  i: Integer;
+begin
+  Result := False;
+  for i := 0 to (FileListIndex-1) do
+    if FileAgeUTF8(FileList[i].PathName + FileList[i].IncFileName) > FileList[i].FileAge then
+    begin
+      f := FileList[i].IncFileName;
+      Result := True;
+    end;
+end;
+
+
 // open file, read and #include other files into it
-function OpenFileAndInclude(PathName: string; FileName: string): string;
+function RecurseInclude(PathName: string; FileName: string): String;
 var
   FileIn: TextFile;
   FileContent, CurLine, IncFileName: string;
   IncStartPos, IncMidPos, IncEndPos: integer;
 begin
+  FileList[FileListIndex].PathName := PathName;
+  FileList[FileListIndex].IncFileName := FileName;
+  FileList[FileListIndex].FileAge := FileAgeUTF8(PathName + FileName);
+  Inc(FileListIndex);
   AssignFile(FileIn, PathName + FileName);
   FileContent := '';
   try
@@ -43,7 +76,7 @@ begin
         IncMidPos := PosEx(#34, CurLine, IncStartPos);  // Find first "
         IncEndPos := PosEx(#34, CurLine, IncMidPos + 1);  // Find second "
         IncFileName := Copy(CurLine, IncMidPos + 1, IncEndPos - IncMidPos - 1);  // extract the file name
-        CurLine := OpenFileAndInclude(PathName, IncFileName);  // recursively process this file
+        CurLine := RecurseInclude(PathName, IncFileName)  // recursively process this file
       end;
       FileContent := FileContent + CurLine + #13#10;  // add current line to string
     end;
@@ -58,9 +91,16 @@ begin
   Result := FileContent;
 end;
 
+function OpenFileAndInclude(): Boolean;
+begin
+  FileListIndex := 0;
+  CompFileContent := RecurseInclude(ExtractFilePath(xFileName), ExtractFileName(XfileName));
+  Result := True;
+end;
+
+
 // invoke online XCompiler by HTTP POST
-function DoCompile(xFile: string; xModule: integer; xFirmware: integer;
-  xCompField: string; xProxy: string): string;
+function DoCompile(): string;
 const
   xCompUrl = 'http://uwterminalx.no-ip.org/xcompile.php';
 var
@@ -81,26 +121,27 @@ begin
   s := s + '--' + Bound + #13#10;
   s := s + 'Content-Disposition: form-data; name="file_Device"' + #13#10;
   s := s + '' + #13#10;
-  s := s + IntToStr(xModule) + #13#10;
+  s := s + IntToStr(xModuleIdx) + #13#10;
 
   s := s + '--' + Bound + #13#10;
   s := s + 'Content-Disposition: form-data; name="file_Firmware"' + #13#10;
   s := s + '' + #13#10;
-  s := s + IntToStr(xFirmware) + #13#10;
+  s := s + IntToStr(xFirmwareIdx) + #13#10;
 
   s := s + '--' + Bound + #13#10;
   s := s + 'Content-Disposition: form-data; name="file_XComp"' + #13#10;
   s := s + '' + #13#10;
-  s := s + xCompField + #13#10;
+  s := s + xField + #13#10;
 
   s := s + '--' + Bound + #13#10;
   s := s + 'Content-Disposition: form-data; name="file_sB"; filename="' +
-    ExtractFileName(xFile) + '"' + #13#10;
+    ExtractFileName(xFileName) + '"' + #13#10;
   s := s + 'Content-Type: application/octet-stream' + #13#10;
   s := s + '' + #13#10;
 
-  // read the SmartBASIC source file
-  s := s + OpenFileAndInclude(ExtractFilePath(xFile), ExtractFileName(xFile));
+  // add the SmartBASIC source file
+  s := s + CompFileContent;
+
   s := s + '' + #13#10;
 
   // end POST request with final boundary
@@ -165,9 +206,9 @@ begin
         else
         begin
           // all good, let's save the xcompiled uwc file
-          Result := 'Successfully compiled ' + ExtractFileName(xFile);
-          Response.SaveToFile(ExtractFilePath(xFile) +
-            LeftStr(ExtractFileName(xFile), RPos('.', ExtractFileName(xFile)) -
+          Result := 'Successfully compiled ' + ExtractFileName(xFileName);
+          Response.SaveToFile(ExtractFilePath(xFileName) +
+            LeftStr(ExtractFileName(xFileName), RPos('.', ExtractFileName(xFileName)) -
             1) + '.uwc');
         end;
       end
