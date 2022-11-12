@@ -4,7 +4,6 @@ object Form1: TForm1
   Top = 90
   Width = 568
   AllowDropFiles = True
-  BorderStyle = bsSingle
   Caption = 'Online XCompiler Tool'
   ClientHeight = 459
   ClientWidth = 568
@@ -221,6 +220,7 @@ object Form1: TForm1
     Height = 240
     Top = 204
     Width = 536
+    Anchors = [akTop, akLeft, akRight, akBottom]
     Font.CharSet = ANSI_CHARSET
     Font.Height = -13
     Font.Name = 'Courier New'
