@@ -19,9 +19,17 @@ unit Unit1;
   firmware versions from the HTML code and populates into the drop down boxes.
   After selecting a SmartBASIC source code file pressing XCompile button will
   invoke the online XCompiler and compile.
+
   On success it will save the compiled .uwc file to the same location from
-  where the source file was loaded. On error the log output window will show
-  the compiler error message.
+  where the source file was loaded.
+  On error the log output window will show the compiler error message.
+
+  Checking Auto-Compile will continously monitor the source file and
+  included files and when a files is changed, compilation is started
+  automatically.
+
+  Source file can be selected by file select dialog, manually entering
+  or by drag&drop a file into the form area.
 
   https://github.com/eriklins/online-xcompiler-tool
 
@@ -56,7 +64,7 @@ type
     StaticText2: TStaticText;
     StaticText3: TStaticText;
     StaticText4: TStaticText;
-    procedure ProxyServerChange(Sender: TObject);
+    procedure FormDropFiles(Sender: TObject; const FileNames: array of string);
     procedure SourceFileNameChange(Sender: TObject);
     procedure XAutoCompileTimerTimer(Sender: TObject);
     procedure XAutoCompileCheckBoxChange(Sender: TObject);
@@ -65,7 +73,6 @@ type
     procedure XCompileButtonClick(Sender: TObject);
     procedure OpenSourceFileButtonClick(Sender: TObject);
     procedure SelectDeviceBoxChange(Sender: TObject);
-    procedure SelectFirmwareBoxChange(Sender: TObject);
     procedure XCompileStartCompiling(Sender: TObject);
   private
 
@@ -76,64 +83,15 @@ type
 
 var
   Form1: TForm1;
-
+  KeepXCompFileName: Boolean = False;
 
 implementation
 
 {$R *.lfm}
 
 
-procedure TForm1.XCompileStartCompiling(Sender: TObject);
-var
-  xCompResult: string;
-  p: string;
-begin
-  LogOutputMemo.Append('XCompiling  [' + DateTimeToStr(Now) + ']');
-  LogOutputMemo.Append('  file:     ' +
-    ExtractFileName(SourceFileOpenDialog.Filename));
-  LogOutputMemo.Append('  module:   ' + XComp.xDevice[SelectDeviceBox.ItemIndex]);
-  LogOutputMemo.Append('  firmware: ' +
-    XComp.xFirmware[SelectDeviceBox.ItemIndex][SelectFirmwareBox.ItemIndex][0] +
-    ' (' + XComp.xFirmware[SelectDeviceBox.ItemIndex][SelectFirmwareBox.ItemIndex][1] +
-    ' ' + XComp.xFirmware[SelectDeviceBox.ItemIndex]
-    [SelectFirmwareBox.ItemIndex][2] + ')');
-  LogOutputMemo.Append('----------------------------------------');
-
-  if ProxyServer.Enabled = True then
-    p := ProxyServer.Text
-  else
-    p := '';
-
-  if not XComp.OpenFileAndInclude() then
-  begin
-    ShowMessage('Could not open/read file(s).');
-    exit;
-  end;
-  xComp.xModuleIdx := SelectDeviceBox.ItemIndex;
-  xComp.xFirmwareIdx := SelectFirmwareBox.ItemIndex + 1;
-  xComp.xField := XComp.xDevice[SelectDeviceBox.ItemIndex] + '_' + IntToStr(SelectFirmwareBox.ItemIndex + 1);
-  xComp.xProxy := p;
-
-  xCompResult := XComp.DoCompile();
-
-  LogOutputMemo.Append(xCompResult);
-end;
-
-
-procedure TForm1.XCompileButtonClick(Sender: TObject);
-var
-  i: Integer;
-begin
-  LogOutputMemo.Lines.Clear;
-  for i:=0 to 32 do
-    LogOutputMemo.Lines.Append('');
-  LogOutputMemo.Lines.Clear;
-  XCompileStartCompiling(Sender);
-end;
-
-
+// this function is called on startup, populates the from elements
 procedure TForm1.FormCreate(Sender: TObject);
-
 const
     xCompPrivacyNotice = 'Laird Connectivity Online XCompilation Service Privacy Note' + #13#10 +
                        'Last Updated: 25/05/2018' + #13#10#13#10 +
@@ -149,7 +107,6 @@ const
                        'information being collected for security purposes, you are' + #13#10 +
                        'unable to request the deletion of data from the server nor' + #13#10 +
                        'request a download for the data.';
-
 var
   i: integer;
   s: String;
@@ -178,10 +135,12 @@ begin
   // disable auto compile timer
   XAutoCompileTimer.Enabled := False;
 
+  // show the Laird privacy notice
   LogOutputMemo.Append(xCompPrivacyNotice);
 end;
 
 
+// 250msec timer used to check on file change when in auto-compile mode
 procedure TForm1.XAutoCompileTimerTimer(Sender: TObject);
 var
   fname: String = '';
@@ -202,6 +161,69 @@ begin
 end;
 
 
+// helper function to generate some log output and start the compilation
+procedure TForm1.XCompileStartCompiling(Sender: TObject);
+var
+  xCompResult: string;
+  p: string;
+begin
+  LogOutputMemo.Append('XCompiling  [' + DateTimeToStr(Now) + ']');
+  LogOutputMemo.Append('  file:     ' +
+    ExtractFileName(SourceFileOpenDialog.Filename));
+  LogOutputMemo.Append('  module:   ' + XComp.xDevice[SelectDeviceBox.ItemIndex]);
+  LogOutputMemo.Append('  firmware: ' +
+    XComp.xFirmware[SelectDeviceBox.ItemIndex][SelectFirmwareBox.ItemIndex][0] +
+    ' (' + XComp.xFirmware[SelectDeviceBox.ItemIndex][SelectFirmwareBox.ItemIndex][1] +
+    ' ' + XComp.xFirmware[SelectDeviceBox.ItemIndex]
+    [SelectFirmwareBox.ItemIndex][2] + ')');
+  LogOutputMemo.Append('----------------------------------------');
+
+  // check proxy settings
+  if ProxyServer.Enabled = True then
+    p := ProxyServer.Text
+  else
+    p := '';
+
+  // first step is to open the source file and include other files
+  if not XComp.OpenFileAndInclude() then
+  begin
+    ShowMessage('Could not open/read file(s).');
+    exit;
+  end;
+
+  // populate some variables with form content
+  xComp.xModuleIdx := SelectDeviceBox.ItemIndex;
+  xComp.xFirmwareIdx := SelectFirmwareBox.ItemIndex + 1;
+  xComp.xField := XComp.xDevice[SelectDeviceBox.ItemIndex] + '_' + IntToStr(SelectFirmwareBox.ItemIndex + 1);
+  xComp.xProxy := p;
+
+  // start compilation
+  xCompResult := XComp.DoCompile();
+
+  // show result of compilation
+  LogOutputMemo.Append(xCompResult);
+end;
+
+
+// Compile button was clicked, clear log window and start
+procedure TForm1.XCompileButtonClick(Sender: TObject);
+var
+  i: Integer;
+begin
+  // clear the log windows (due to some issue with Lazarus TMemo
+  // seems to be necessary to print some blank lines to get it
+  // properly cleared.)
+  LogOutputMemo.Lines.Clear;
+  for i:=0 to 32 do
+    LogOutputMemo.Lines.Append('');
+  LogOutputMemo.Lines.Clear;
+
+  // start compile sequence
+  XCompileStartCompiling(Sender);
+end;
+
+
+// proxy checkbox was changed
 procedure TForm1.UseProxyChange(Sender: TObject);
 begin
   // toggle state of proxy server field
@@ -211,32 +233,15 @@ begin
 end;
 
 
-procedure TForm1.OpenSourceFileButtonClick(Sender: TObject);
-begin
-  // open a file open dialog
-  if SourceFileOpenDialog.Execute then
-  begin
-    if fileExists(SourceFileOpenDialog.Filename) then
-    begin
-      SourceFileName.Text := ExtractFileName(SourceFileOpenDialog.Filename);
-      xComp.xFileName := SourceFileOpenDialog.Filename;
-      XCompileButton.Enabled := True;  // enable XCompiler button
-      XAutoCompileCheckBox.Enabled := True;
-    end;
-  end
-  else
-  begin
-    SourceFileName.Text := 'No file selected.';
-    XCompileButton.Enabled := False;  // disable XCompiler button
-    XAutoCompileCheckBox.Enabled := False;;
-  end;
-end;
-
-
+// auto-compile checkbox was changed, need to enable/disable
+// a bunch of other elements and enable the file monitoring timer
 procedure TForm1.XAutoCompileCheckBoxChange(Sender: TObject);
+var
+  i: Integer;
 begin
   if XAutoCompileCheckBox.State = cbChecked then
   begin
+    // disable many form elements during auto-compile mode
     XCompileButton.Enabled := False;
     OpenSourceFileButton.Enabled := False;
     SourceFileName.Enabled := False;
@@ -245,8 +250,13 @@ begin
     UseProxy.Enabled := False;
     ProxyServer.Enabled := False;
     XAutoCompileTimer.Enabled := True;
+    // clear log output and show auto-compile active info
+    LogOutputMemo.Lines.Clear;
+    for i:=0 to 32 do
+      LogOutputMemo.Lines.Append('');
     LogOutputMemo.Lines.Clear;
     LogOutputMemo.Append('Auto-Compile active, watching files...');
+    // open source file and included files to get relevant files names
     if not XComp.OpenFileAndInclude() then
     begin
       ShowMessage('Could not open/read file(s).');
@@ -255,6 +265,7 @@ begin
   end
   else
   begin
+    // enable many form elements when auto-compile is not active
     XCompileButton.Enabled := True;
     OpenSourceFileButton.Enabled := True;
     SourceFileName.Enabled := True;
@@ -266,12 +277,17 @@ begin
     else
       ProxyServer.Enabled := False;
     XAutoCompileTimer.Enabled := False;
+    // clear log output and show auto-compile non-active info
+    LogOutputMemo.Lines.Clear;
+    for i:=0 to 32 do
+      LogOutputMemo.Lines.Append('');
     LogOutputMemo.Lines.Clear;
     LogOutputMemo.Append('Stopped Auto-Compile.');
   end;
 end;
 
 
+// device select box has changed, populate some variables for compilation
 procedure TForm1.SelectDeviceBoxChange(Sender: TObject);
 var
   i, j: integer;
@@ -288,18 +304,40 @@ begin
 end;
 
 
-procedure TForm1.SelectFirmwareBoxChange(Sender: TObject);
+// open source file button was clicked, we show a file select dialog
+procedure TForm1.OpenSourceFileButtonClick(Sender: TObject);
 begin
+  // open a file open dialog
+  if SourceFileOpenDialog.Execute then
+    // populate some variables with file name and path and enable compile and auto-compile elements
+    SourceFileName.Text := SourceFileOpenDialog.Filename;
 end;
 
 
-procedure TForm1.ProxyServerChange(Sender: TObject);
-begin
-end;
-
-
+// file name has changed (either by entering directly, drag&drop or from file select dialog)
 procedure TForm1.SourceFileNameChange(Sender: TObject);
 begin
+  // check if file exists
+  if not FileExists(SourceFileName.Text) then
+  begin
+    ShowMessage('File ' + SourceFileName.Text + ' does not exist.');
+    xComp.xFileName := '';
+    XCompileButton.Enabled := False;  // disable XCompiler button and auto-compile checkbox
+    XAutoCompileCheckBox.Enabled := False;
+    Exit;
+  end;
+  // populate variable and enable XCompiler button and auto-compile checkbox
+  xComp.xFileName := SourceFileName.Text;
+  XCompileButton.Enabled := True;
+  XAutoCompileCheckBox.Enabled := True;
+end;
+
+
+// file has been drag/dropped into the form
+procedure TForm1.FormDropFiles(Sender: TObject; const FileNames: array of string);
+begin
+  // set source file name -> will invoke SourceFileNameChange()
+  SourceFileName.Text := FileNames[0];
 end;
 
 
