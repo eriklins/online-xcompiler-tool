@@ -31,9 +31,12 @@ type
     FileAge: Longint;
   end;
 
+const
+  MAX_INC_FILES = 50;
+
 var
-  FileList: array [0..20] of TIncludedFiles;
-  FileListIndex: Integer;
+  FileList: array [0..MAX_INC_FILES] of TIncludedFiles;
+  FileListCount: Integer;
   CompFileContent: String;
 
 
@@ -43,7 +46,7 @@ var
   i: Integer;
 begin
   Result := False;
-  for i := 0 to (FileListIndex-1) do
+  for i := 0 to (FileListCount-1) do
     if FileAgeUTF8(FileList[i].PathName + FileList[i].IncFileName) > FileList[i].FileAge then
     begin
       f := FileList[i].IncFileName;
@@ -59,10 +62,15 @@ var
   FileContent, CurLine, IncFileName: string;
   IncStartPos, IncMidPos, IncEndPos: integer;
 begin
-  FileList[FileListIndex].PathName := PathName;
-  FileList[FileListIndex].IncFileName := FileName;
-  FileList[FileListIndex].FileAge := FileAgeUTF8(PathName + FileName);
-  Inc(FileListIndex);
+  FileList[FileListCount].PathName := PathName;
+  FileList[FileListCount].IncFileName := FileName;
+  FileList[FileListCount].FileAge := FileAgeUTF8(PathName + FileName);
+  Inc(FileListCount);
+  if FileListCount = MAX_INC_FILES then
+  begin
+    ShowMessage('Maximum #include Files Reached.');
+    Exit;
+  end;
   AssignFile(FileIn, PathName + FileName);
   FileContent := '';
   try
@@ -93,7 +101,7 @@ end;
 
 function OpenFileAndInclude(): Boolean;
 begin
-  FileListIndex := 0;
+  FileListCount := 0;
   CompFileContent := RecurseInclude(ExtractFilePath(xFileName), ExtractFileName(XfileName));
   Result := True;
 end;
