@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 1828
+  Left = 2470
   Height = 459
-  Top = 90
+  Top = 63
   Width = 568
   AllowDropFiles = True
   Caption = 'Online XCompiler Tool'
@@ -121,7 +121,7 @@ object Form1: TForm1
     Top = 16
     Width = 32
     Alignment = taRightJustify
-    Caption = 'V1.3'
+    Caption = 'V1.4'
     Color = clDefault
     Font.CharSet = ANSI_CHARSET
     Font.Color = clGray

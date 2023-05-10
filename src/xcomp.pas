@@ -81,10 +81,14 @@ begin
       IncStartPos := Pos('#include', CurLine);  // look for #include statement
       if IncStartPos > 0 then
       begin
-        IncMidPos := PosEx(#34, CurLine, IncStartPos);  // Find first "
-        IncEndPos := PosEx(#34, CurLine, IncMidPos + 1);  // Find second "
-        IncFileName := Copy(CurLine, IncMidPos + 1, IncEndPos - IncMidPos - 1);  // extract the file name
-        CurLine := RecurseInclude(PathName, IncFileName)  // recursively process this file
+        if (Pos('//', CurLine) < IncStartPos) and (Pos('//', CurLine) > 0) then  // if #include is in a comment line we ignore the line
+          CurLine := ''
+        else begin
+          IncMidPos := PosEx(#34, CurLine, IncStartPos);  // Find first "
+          IncEndPos := PosEx(#34, CurLine, IncMidPos + 1);  // Find second "
+          IncFileName := Copy(CurLine, IncMidPos + 1, IncEndPos - IncMidPos - 1);  // extract the file name
+          CurLine := RecurseInclude(PathName, IncFileName)  // recursively process this file
+        end;
       end;
       FileContent := FileContent + CurLine + #13#10;  // add current line to string
     end;
