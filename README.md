@@ -5,7 +5,7 @@ Laird's online xcompiler lives at http://uwterminalx.no-ip.org/ and offers onlin
 
 The Online XCompiler Tool supports this and can compile SmartBASIC files \#include'ing other SmartBASIC files. The new Auto-Compile mode continously monitors the source file and all included files and starts compilation as soon as one of the files has been changed.
 
-It can run under Windows 32 and 64 bit as well as Linux 32 and 64 bit.
+It can run under Windows 32 and 64 bit, Linux 32 and 64 bit and Mac OS darwin 64 bit.
 
 ![Online XCompiler Tool - Windows](images/OnlineXCompilerTool_Windows.png)
 ![Online XCompiler Tool - Linux](images/OnlineXCompilerTool_Linux.png)
@@ -16,9 +16,9 @@ On startup it loads the web page from the original URL and grabs devices and fir
 The Online XCompiler Tool was written with [Lazarus](https://www.lazarus-ide.org/index.php) / [Free Pascal](https://www.freepascal.org/). The project and full source code are available in the src folder.
 
 ## Releases
-Pre-built binaries for Windows 32/64 bit and Linux 32/64 bit are available on the [releases tab](https://github.com/eriklins/online-xcompiler-tool/releases). These do not require any particular installation, just download and run.
+Pre-built binaries for Windows 32/64 bit, Linux 32/64 bit and Mac OS Darwin 64 bit are available on the [releases tab](https://github.com/eriklins/online-xcompiler-tool/releases). These do not require any particular installation, just download and run.
 
 ## License
-Copyright (C) 2022 Erik Lins
+Copyright (C) 2022-2023 Erik Lins
 
 This project is released under the MIT License.
