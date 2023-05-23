@@ -11,9 +11,9 @@ var
   xCompPage, s: string;
   p: integer;
   xNofDevices: integer;
-  xDevice: array [0..19] of string;  // extend if more than 20 devices
-  xNofFirmware: array [0..19] of integer;
-  xFirmware: array [0..19, 0..10, 0..2] of string;  // extend if more than 20 fw versions
+  xDevice: array [0..29] of string;  // extend if more than 20 devices
+  xNofFirmware: array [0..29] of integer;
+  xFirmware: array [0..29, 0..29, 0..2] of string;  // extend if more than 20 fw versions
   xModuleIdx, xFirmwareIdx: Integer;
   xField, xProxy, xFileName: String;
 

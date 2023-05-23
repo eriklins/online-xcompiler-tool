@@ -123,8 +123,8 @@ begin
   SelectFirmwareBox.Clear;
   for i := 0 to XComp.xNofFirmware[0] - 1 do
   begin
-    SelectFirmwareBox.Items.Add(XComp.xFirmware[i][0][0] + ' (' +
-      XComp.xFirmware[i][0][1] + ' ' + XComp.xFirmware[i][0][2] + ')');
+    SelectFirmwareBox.Items.Add(XComp.xFirmware[0][i][0] + ' (' +
+      XComp.xFirmware[0][i][1] + ' ' + XComp.xFirmware[0][i][2] + ')');
   end;
   SelectFirmwareBox.ItemIndex := 0;
 
